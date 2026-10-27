@@ -24,59 +24,57 @@ import java.util.*;
  * GitHub: https://github.com/moseoh/programmers_helper
  */
 class Solution {
-    public static void main(String[] args) {
-
-    }
-    
-    public static void PRINT_RESULT(int index, int[] result, int[] answer) {
-        boolean correct = Arrays.equals(result, answer);
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n\n테스트 케이스 ").append(index).append(": ");
-        sb.append(correct ? "정답" : "오답").append("\n");
-        sb.append("\t- 실행 결과: \t").append(Arrays.toString(result)).append("\n");
-        sb.append("\t- 기댓값: \t").append(Arrays.toString(answer)).append("\n");
-        if (correct) System.out.println(sb);
-        else throw new RuntimeException(sb.toString());
-    }
-    
     public List<Integer> solution(int[] fees, String[] records) {
         List<Integer> answer = new ArrayList<>();
         
         Map<String, Integer> enteredAt = new HashMap<>();
         Map<String, Integer> totalMinutes = new TreeMap<>();
         
-        final Fee fee = Fee.from(fees);
-        
         for (String record : records) {
-            System.out.println("record = " + record);
+            String[] s = record.split(" ");
+            String[] times = s[0].split(":");
             
-            final String[] s = record.split(" ");
-            final String[] times = s[0].split(":");
+            Integer hoursToMinutes = Integer.parseInt(times[0]) * 60;
+            Integer minutes = Integer.parseInt(times[1]);
             
-            final Integer hoursToMinutes = Integer.parseInt(times[0]) * 60;
-            final Integer minutes = Integer.parseInt(times[1]);
+            int sumMinutes = hoursToMinutes + minutes;
             
-            final Integer sumMinutes = hoursToMinutes + minutes;
-            
-            final String regNumber = s[1];
-            final String option = s[2];
+            String regNumber = s[1];
+            String option = s[2];
             
             if (Objects.equals("IN", option)) {
                 //입차
                 enteredAt.put(regNumber, sumMinutes);
             } else {
-                //출차
-                final int cumurateMinutes = totalMinutes.getOrDefault(regNumber, 0);
-                totalMinutes.remove(regNumber);
-                totalMinutes.put(regNumber, cumurateMinutes + sumMinutes);
-                System.out.println("totalMinutes = " + totalMinutes);
+                //출차 - 입차
+                int totalTime = sumMinutes - enteredAt.get(regNumber);
+                
+                Integer orDefault = totalMinutes.getOrDefault(regNumber, 0);
+                totalMinutes.put(regNumber, totalTime + orDefault);
+                
                 enteredAt.remove(regNumber);
             }
+        }
+        
+        for (Map.Entry<String, Integer> entry : enteredAt.entrySet()) {
+            String regNumber = entry.getKey();
+            int parkingTime = 1439 - entry.getValue();
             
-            System.out.println("enteredAt = " + enteredAt);
+            int accumulated = totalMinutes.getOrDefault(regNumber, 0);
             
-            for (Map.Entry<String, Integer> entry : enteredAt.entrySet()) {
-                totalMinutes.put(entry.getKey(), 1439 - entry.getValue());
+            totalMinutes.put(regNumber, accumulated + parkingTime);
+        }
+        
+        Fee fee = Fee.from(fees);
+        
+        for (Map.Entry<String, Integer> entry : totalMinutes.entrySet()) {
+            final Integer total = entry.getValue();
+            if (fee.baseTime >= total) {
+                answer.add(fee.baseFee);
+            } else {
+                int extraTime = total - fee.baseTime;
+                int units = (extraTime + fee.unitTime - 1) / fee.unitTime;
+                answer.add(fee.baseFee + units * fee.unitFee);
             }
         }
         
@@ -84,10 +82,6 @@ class Solution {
     }
     
     record Fee(int baseTime, int baseFee, int unitTime, int unitFee) {
-        Fee() {
-            this(180, 5000, 10, 600);
-        }
-        
         static Fee from(int[] fees) {
             return new Fee(fees[0], fees[1], fees[2], fees[3]);
         }
