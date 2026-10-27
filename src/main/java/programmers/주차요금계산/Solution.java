@@ -1,4 +1,4 @@
-package 주차요금계산;
+package programmers.주차요금계산;
 
 import java.util.*;
 
